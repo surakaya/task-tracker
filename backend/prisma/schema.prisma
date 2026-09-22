@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  status      String   @default("pending")
+  isImportant Boolean  @default(false)
+  reminderAt  DateTime?
+  userId      Int?
+  user        User?    @relation("PersonalTasks", fields: [userId], references: [id], onDelete: Cascade)
+  roomId      Int?
+  room        Room?    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([roomId])
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(100)
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @db.VarChar(255)
+  phone        String?   @db.VarChar(30)
+  tasks        Task[]       @relation("PersonalTasks")
+  sessions     Session[]
+  ownedRooms   Room[]       @relation("RoomOwner")
+  memberships  RoomMember[]
+  createdAt    DateTime  @default(now())
+}
+
+model Room {
+  id        Int          @id @default(autoincrement())
+  name      String       @db.VarChar(100)
+  joinCode  String       @unique @db.VarChar(32)
+  ownerId   Int
+  owner     User         @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   RoomMember[]
+  tasks     Task[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model RoomMember {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  userId    Int
+  role      String   @default("member") @db.VarChar(20)
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @db.VarChar(128)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
