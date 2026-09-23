@@ -7,6 +7,10 @@ export interface Task {
   status: TaskStatus;
   isImportant: boolean;
   reminderAt: string | null;
+  roomId: number | null;
+  user?: {
+    name: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
