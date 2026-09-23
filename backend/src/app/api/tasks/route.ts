@@ -15,7 +15,17 @@ export async function GET(request: NextRequest) {
     if (!roomId) return NextResponse.json(await prisma.task.findMany({ where: { userId: user.id, roomId: null }, orderBy: { createdAt: "desc" } }));
     const parsedRoomId = Number(roomId);
     if (!Number.isInteger(parsedRoomId) || !(await roomMembership(parsedRoomId, user.id))) return NextResponse.json({ error: "Odaya erişiminiz yok." }, { status: 403 });
-    return NextResponse.json(await prisma.task.findMany({ where: { roomId: parsedRoomId }, orderBy: { createdAt: "desc" } }));
+    return NextResponse.json(await prisma.task.findMany({
+      where: { roomId: parsedRoomId },
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }));
   } catch (error) { console.error(error); return NextResponse.json({ error: "Görevler alınamadı." }, { status: 500 }); }
 }
 
@@ -29,7 +39,7 @@ export async function POST(request: NextRequest) {
     if (reminder && Number.isNaN(reminder.getTime())) return NextResponse.json({ error: "Hatırlatma zamanı geçersiz." }, { status: 400 });
     const parsedRoomId = roomId === undefined || roomId === null ? null : Number(roomId);
     if (parsedRoomId !== null && (!Number.isInteger(parsedRoomId) || !(await roomMembership(parsedRoomId, user.id)))) return NextResponse.json({ error: "Odaya erişiminiz yok." }, { status: 403 });
-    const task = await prisma.task.create({ data: { title: title.trim(), description: description?.trim() || null, isImportant: Boolean(isImportant), reminderAt: reminder, ...(parsedRoomId === null ? { userId: user.id } : { roomId: parsedRoomId }) } });
+    const task = await prisma.task.create({ data: { title: title.trim(), description: description?.trim() || null, isImportant: Boolean(isImportant), reminderAt: reminder, ...(parsedRoomId === null ? { userId: user.id } : { roomId: parsedRoomId, userId: user.id }) } });
     return NextResponse.json(task, { status: 201 });
   } catch (error) { console.error(error); return NextResponse.json({ error: "Görev eklenemedi." }, { status: 500 }); }
 }

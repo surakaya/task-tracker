@@ -1,4 +1,4 @@
--- Preserve existing tasks by assigning them to an inaccessible import account.
+
 CREATE TABLE `User` (
   `id` INTEGER NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL,
