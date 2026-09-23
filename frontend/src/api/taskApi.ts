@@ -5,7 +5,19 @@ const BASE_URL = "http://localhost:4000/api/tasks";
 export interface User { id: number; name: string; email: string; }
 export interface AuthResult { token: string; user: User; }
 export interface TaskInput { title: string; description: string; isImportant: boolean; reminderAt: string | null; roomId?: number | null; }
-export interface Room { id: number; name: string; joinCode: string; role: string; _count: { members: number; tasks: number }; }
+export interface Room {
+  id: number;
+  name: string;
+  joinCode: string;
+  role: string;
+  _count: { members: number; tasks: number };
+  members: {
+    user: {
+      id: number;
+      name: string;
+    };
+  }[];
+}
 
 function authHeaders(token: string) { return { "Content-Type": "application/json", Authorization: `Bearer ${token}` }; }
 

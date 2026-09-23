@@ -8,7 +8,28 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
   const memberships = await prisma.roomMember.findMany({
     where: { userId: user.id },
-    include: { room: { include: { _count: { select: { members: true, tasks: true } } } } },
+    include: {
+      room: {
+        include: {
+          _count: {
+            select: {
+              members: true,
+              tasks: true,
+            },
+          },
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     orderBy: { createdAt: "asc" },
   });
   return NextResponse.json(memberships.map(({ role, room }) => ({ ...room, role })));
