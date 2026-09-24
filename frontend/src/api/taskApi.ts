@@ -9,6 +9,7 @@ export interface Room {
   id: number;
   name: string;
   joinCode: string;
+  ownerId: number;
   role: string;
   _count: { members: number; tasks: number };
   members: {
@@ -76,4 +77,25 @@ export async function joinRoom(token: string, code: string): Promise<Room> {
 export async function leaveRoom(token: string, id: number): Promise<void> {
   const res = await fetch(`http://localhost:4000/api/rooms/${id}/leave`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new Error((await res.json()).error ?? "Odadan ayrılamadınız.");
+}
+export async function removeRoomMember(
+  token: string,
+  roomId: number,
+  userId: number
+) {
+  const response = await fetch(`http://localhost:4000/api/rooms/${roomId}/remove-member`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ userId }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error ?? "Üye odadan çıkarılamadı.");
+  }
+
+  return response.json();
 }

@@ -25,12 +25,32 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await currentUser(request); if (!user) return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
-    const id = invalidId((await params).id); if (!id) return NextResponse.json({ error: "Geçersiz görev kimliği." }, { status: 400 });
+    const user = await currentUser(request);
+    if (!user) return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
+
+    const id = invalidId((await params).id);
+    if (!id) return NextResponse.json({ error: "Geçersiz görev kimliği." }, { status: 400 });
+
     const task = await prisma.task.findUnique({ where: { id } });
-    const mayAccess = task && (task.userId === user.id || (task.roomId !== null && await roomMembership(task.roomId, user.id)));
-    if (!mayAccess) return NextResponse.json({ error: "Görev bulunamadı." }, { status: 404 });
+    if (!task) return NextResponse.json({ error: "Görev bulunamadı." }, { status: 404 });
+
+    if (task.roomId !== null) {
+      const room = await prisma.room.findUnique({
+        where: { id: task.roomId },
+        select: { ownerId: true },
+      });
+
+      if (!room || room.ownerId !== user.id) {
+        return NextResponse.json({ error: "Bu görevi silme yetkiniz yok." }, { status: 403 });
+      }
+    } else if (task.userId !== user.id) {
+      return NextResponse.json({ error: "Görev bulunamadı." }, { status: 404 });
+    }
+
     await prisma.task.delete({ where: { id } });
     return NextResponse.json({ message: "Görev silindi." });
-  } catch (error) { console.error(error); return NextResponse.json({ error: "Görev silinemedi." }, { status: 500 }); }
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Görev silinemedi." }, { status: 500 });
+  }
 }
